@@ -13,9 +13,10 @@ interface CSVTransaction {
   value: number;
   category: string;
 }
+
 class ImportTransactionsService {
   async execute(filePath: string): Promise<Transaction[]> {
-    const transactionsRepository = getCustomRepository(TransactionsRepository);
+    const transactionRepository = getCustomRepository(TransactionsRepository);
     const categoriesRepository = getRepository(Category);
 
     const contactsReadStream = fs.createReadStream(filePath);
@@ -37,6 +38,7 @@ class ImportTransactionsService {
       if (!title || !type || !value) return;
 
       categories.push(category);
+
       transactions.push({ title, type, value, category });
     });
 
@@ -56,17 +58,17 @@ class ImportTransactionsService {
       .filter(category => !existentCategoriesTitles.includes(category))
       .filter((value, index, self) => self.indexOf(value) === index);
 
-    const newCategorires = categoriesRepository.create(
+    const newCategories = categoriesRepository.create(
       addCategoryTitles.map(title => ({
         title,
       })),
     );
 
-    await categoriesRepository.save(newCategorires);
+    await categoriesRepository.save(newCategories);
 
-    const finalCategories = [...newCategorires, ...existentCategories];
+    const finalCategories = [...newCategories, ...existentCategories];
 
-    const createdTransactions = transactionsRepository.create(
+    const createdTransactions = transactionRepository.create(
       transactions.map(transaction => ({
         title: transaction.title,
         type: transaction.type,
@@ -77,7 +79,8 @@ class ImportTransactionsService {
       })),
     );
 
-    await transactionsRepository.save(createdTransactions);
+    await transactionRepository.save(createdTransactions);
+
     await fs.promises.unlink(filePath);
 
     return createdTransactions;
